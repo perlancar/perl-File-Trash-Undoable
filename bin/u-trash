@@ -1,0 +1,122 @@
+#!/usr/bin/perl
+
+use 5.010;
+use strict;
+use warnings;
+
+package Perinci::CmdLine::Trash;
+use parent qw(Perinci::CmdLine);
+
+sub gen_common_opts {
+    my ($self) = @_;
+    my $go = $self->SUPER::gen_common_opts;
+    push @$go, (
+        "empty" => sub {
+            $self->{_selected_subcommand} = 'empty';
+        },
+        "list-contents" => sub {
+            $self->{_selected_subcommand} = 'list_contents';
+        },
+    );
+
+    $go;
+}
+
+package main;
+
+# VERSION
+
+Perinci::CmdLine::Trash->new(
+    url => '/File/Trash/Undoable/',
+    subcommands => {
+        trash         => {url=>'/File/Trash/Undoable/trash_files'},
+        list_contents => {url=>'/File/Trash/Undoable/list_trash_contents'},
+        empty         => {url=>'/File/Trash/Undoable/empty_trash'},
+    },
+    default_subcommand => 'trash',
+    undo => 1,
+)->run;
+
+1;
+# ABSTRACT: Trash files, with undo/redo capability
+# PODNAME: u-trash
+
+=head1 SYNOPSIS
+
+ # trash some files, but in simulation mode, not really trashing the files
+ % VERBOSE=1 u-trash --dry-run *.bak
+
+ # trash some files, for real
+ % u-trash *.bak
+
+ # list trash contents
+ % u-trash --list-contents
+
+ # trash some more files
+ % u-trash * .tmp
+
+ # ups made a mistake; no worry, let's undo; now previous trashing is reversed
+ % u-trash --undo
+
+ # undo again; now the *.bak files are also restored
+ % u-trash --undo
+
+ # redo; now the *.bak files are trashed again
+ % u-trash --redo
+
+ # show history
+ % u-trash --history
+
+ # forget history; past actions can no longer be undone/redone
+ % u-trash --clear-history
+
+ # empty trash; this action is not undoable (the point is to reclaim space)
+ % u-trash --empty
+
+ # display help for more options
+ % u-trash --help
+
+
+=head1 DESCRIPTION
+
+This command-line program is an interface to L<File::Trash::Undoable>, which in
+turn uses L<File::Trash::FreeDesktop>.
+
+Features: undo/redo, dry run mode, per-filesystem trash dir.
+
+This program is relatively new and have not yet been tested extensively. Use
+with caution.
+
+
+=head1 USING AS rm REPLACEMENT
+
+B<u-trash> can be used as B<rm> replacement (a.k.a. alias) with some caveats:
+
+=over 4
+
+=item * u-trash deletes directories by default
+
+That is, it behaves as if -R rm option is in effect.
+
+=item * Some rm options exist but do not have any effect (noop)
+
+=item * Some rm options are still missing/unknown
+
+This include: C<-i>/C<-I>/C<--interactive>, C<--one-file-system>,
+C<--no-preserve-root>.
+
+=back
+
+
+=head1 SEE ALSO
+
+L<File::Trash::Undoable>
+
+L<File::Trash::FreeDesktop>
+
+B<trash-cli>
+
+B<gvfs-trash>
+
+B<rmv>
+

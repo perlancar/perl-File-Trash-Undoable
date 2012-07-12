@@ -5,7 +5,8 @@ use strict;
 use warnings;
 
 package Perinci::CmdLine::Trash;
-use parent qw(Perinci::CmdLine);
+use Moo;
+extends 'Perinci::CmdLine';
 
 sub gen_common_opts {
     my ($self) = @_;

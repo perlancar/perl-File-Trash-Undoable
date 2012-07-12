@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use File::Trash::FreeDesktop;
-use Perinci::Sub::Gen 0.13 qw(gen_undoable_func);
+use Perinci::Sub::Gen::Undoable 0.13 qw(gen_undoable_func);
 
 # VERSION
 

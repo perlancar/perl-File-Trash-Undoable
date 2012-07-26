@@ -3,36 +3,30 @@
 use 5.010;
 use strict;
 use warnings;
-
-package Perinci::CmdLine::Trash;
-use Moo;
-extends 'Perinci::CmdLine';
-
-sub gen_common_opts {
-    my ($self) = @_;
-    my $go = $self->SUPER::gen_common_opts;
-    push @$go, (
-        "empty" => sub {
-            $self->{_selected_subcommand} = 'empty';
-        },
-        "list-contents" => sub {
-            $self->{_selected_subcommand} = 'list_contents';
-        },
-    );
-
-    $go;
-}
-
-package main;
+use Perinci::CmdLine;
 
 # VERSION
 
-Perinci::CmdLine::Trash->new(
+Perinci::CmdLine->new(
     url => '/File/Trash/Undoable/',
     subcommands => {
         trash         => {url=>'/File/Trash/Undoable/trash_files'},
         list_contents => {url=>'/File/Trash/Undoable/list_trash_contents'},
-        empty         => {url=>'/File/Trash/Undoable/empty_trash'},
+        empty         => {url=>'/File/Trash/Undoable/empty_trash', undo=>0},
+    },
+    extra_opts => {
+        empty => {
+            handler => sub {
+                my $self = shift;
+                $self->{_selected_subcommand} = 'empty';
+            },
+        },
+        list_contents => {
+            handler => sub {
+                my $self = shift;
+                $self->{_selected_subcommand} = 'list_contents';
+            },
+        },
     },
     default_subcommand => 'trash',
     undo => 1,

@@ -4,6 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
+use Cwd qw(abs_path);
 use File::Trash::FreeDesktop;
 use Perinci::Sub::Gen::Undoable 0.13 qw(gen_undoable_func);
 
@@ -11,23 +12,80 @@ use Perinci::Sub::Gen::Undoable 0.13 qw(gen_undoable_func);
 
 our %SPEC;
 
-#my $res = gen_undoable_func(
-#    name => 'trash_files',
-#    summary => 'Trash files (with undo support)',
-#    args => {
-#        files => {
-#            args
-#        },
-#    },
-#);
-#$res->[0] == 200 or die "Can't generate function: $res->[0] - $res->[1]";
+my $trash = File::Trash::FreeDesktop->new;
 
-$SPEC{trash_files} = {
-    # TODO: -v as alias to --verbose
-};
-sub trash_files {
-    [200, "OK", "Placeholder for trash_files"];
-}
+my $res = gen_undoable_func(
+    name => 'trash_files',
+    summary => 'Trash files (with undo support)',
+    args => {
+        files => {
+            summary => 'Files/dirs to delete',
+            schema => ['array*' => {of=>'str*'}],
+            req => 1,
+            pos => 0,
+            greedy => 1,
+        },
+    },
+    check_args => sub {
+        my $args = shift;
+        $args->{files} or return [400, "Please specify files"];
+        ref($args->{files}) eq 'ARRAY' or return [400, "Files must be array"];
+        # necessary?
+        @{$args->{files}} > 0 or return [400, "Please specify at least 1 file"];
+        [200, "OK"];
+    },
+    build_steps => sub {
+        my $args = shift;
+        my $ff   = $args->{files};
+
+        my @steps;
+        for (@$ff) {
+            my $a = abs_path($_);
+            return [500, "Can't find $_"] unless $a;
+            push @steps, ["trash", $a];
+        }
+        [200, "OK", \@steps];
+    },
+    steps => {
+        trash => {
+            summary => 'Trash a file',
+            description => <<'_',
+
+Argument is path (should be absolute).
+
+_
+            check => sub {
+                my ($args, $step) = @_;
+                return [200, "OK", ["recover", $step->[1]]];
+            },
+            fix => sub {
+                my ($args, $step, $undo) = @_;
+                my $a = $step->[1];
+                $trash->trash($a);
+                [200, "OK"];
+            },
+        },
+        recover => {
+            summary => 'Recover a file',
+            description => <<'_',
+
+Argument is path.
+
+_
+            check => sub {
+                my ($args, $step) = @_;
+                return [200, "OK", ["trash", $step->[1]]];
+            },
+            fix => sub {
+                my ($args, $step, $undo) = @_;
+                my $a = $step->[1];
+                $trash->recover($a);
+                [200, "OK"];
+            },
+        },
+    },
+);
+$res->[0] == 200 or die "Can't generate function: $res->[0] - $res->[1]";
 
 $SPEC{list_trash_contents} = {
 };

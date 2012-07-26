@@ -10,9 +10,17 @@ use Perinci::CmdLine;
 Perinci::CmdLine->new(
     url => '/File/Trash/Undoable/',
     subcommands => {
-        trash         => {url=>'/File/Trash/Undoable/trash_files'},
-        list_contents => {url=>'/File/Trash/Undoable/list_trash_contents'},
-        empty         => {url=>'/File/Trash/Undoable/empty_trash', undo=>0},
+        trash         => {
+            url  => '/File/Trash/Undoable/trash_files',
+        },
+        list_contents => {
+            url  => '/File/Trash/Undoable/list_trash_contents',
+            undo => 0,
+        },
+        empty         => {
+            url  => '/File/Trash/Undoable/empty_trash',
+            undo=>0,
+        },
     },
     extra_opts => {
         empty => {

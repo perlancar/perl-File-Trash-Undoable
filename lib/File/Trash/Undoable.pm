@@ -88,9 +88,11 @@ _
 $res->[0] == 200 or die "Can't generate function: $res->[0] - $res->[1]";
 
 $SPEC{list_trash_contents} = {
+    summary => 'List contents of trash directory',
 };
 sub list_trash_contents {
-    [200, "OK", "Placeholder for list_trash_contents"];
+    my %args = @_;
+    [200, "OK", [$trash->list_contents]];
 }
 
 $SPEC{empty_trash} = {

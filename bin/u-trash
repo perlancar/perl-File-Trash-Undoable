@@ -19,7 +19,8 @@ Perinci::CmdLine->new(
         },
         empty         => {
             url  => '/File/Trash/Undoable/empty_trash',
-            undo=>0,
+            pass_cmdline_object => 1,
+            undo => 0,
         },
     },
     extra_opts => {

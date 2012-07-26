@@ -96,9 +96,15 @@ sub list_trash_contents {
 }
 
 $SPEC{empty_trash} = {
+    summary => 'List contents of trash directory',
 };
 sub empty_trash {
-    [200, "OK", "Placeholder for empty_trash"];
+    my %args = @_;
+    my $cmd  = $args{-cmdline};
+
+    $trash->empty;
+    $cmd->run_clear_history;
+    $cmd->{_res};
 }
 
 1;

@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Cwd qw(abs_path);
-use File::Trash::FreeDesktop 0.04;
+use File::Trash::FreeDesktop 0.05;
 use Perinci::Sub::Gen::Undoable 0.13 qw(gen_undoable_func);
 
 # VERSION
@@ -13,6 +13,8 @@ use Perinci::Sub::Gen::Undoable 0.13 qw(gen_undoable_func);
 our %SPEC;
 
 my $trash = File::Trash::FreeDesktop->new;
+
+my $_step_untrash;
 
 my $res = gen_undoable_func(
     name => 'trash_files',
@@ -56,7 +58,7 @@ Argument is path (should be absolute).
 _
             check => sub {
                 my ($args, $step) = @_;
-                return [200, "OK", ["recover", $step->[1]]];
+                return [200, "OK", ["untrash", $step->[1]]];
             },
             fix => sub {
                 my ($args, $step, $undo) = @_;
@@ -65,8 +67,8 @@ _
                 [200, "OK"];
             },
         },
-        recover => {
-            summary => 'Recover a file',
+        untrash => ($_step_untrash = {
+            summary => 'Untrash a file',
             description => <<'_',
 
 Argument is path.
@@ -79,10 +81,15 @@ _
             fix => sub {
                 my ($args, $step, $undo) = @_;
                 my $a = $step->[1];
-                $trash->recover({on_not_found=>'ignore'}, $a);
+                $trash->recover({
+                    on_not_found     => 'ignore',
+                    on_target_exists => 'ignore',
+                }, $a);
                 [200, "OK"];
             },
-        },
+        }),
+        # old alias to untrash
+        recover => $_step_untrash,
     },
 );
 $res->[0] == 200 or die "Can't generate function: $res->[0] - $res->[1]";

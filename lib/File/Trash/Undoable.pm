@@ -61,7 +61,10 @@ _
                 my ($args, $step) = @_;
                 return [200, "OK", ["untrash", $step->[1], $step->[2]]];
             },
-            fix_log_message => "Trashing %(_step_arg1)s ...",
+            fix_log_message => sub {
+                my ($args, $step) = @_;
+                "Trashing ".($step->[2] // $step->[1])." ...";
+            },
             fix => sub {
                 my ($args, $step, $undo) = @_;
                 my $a = $step->[1];
@@ -81,7 +84,10 @@ _
                 my ($args, $step) = @_;
                 return [200, "OK", ["trash", $step->[1], $step->[2]]];
             },
-            fix_log_message => "Untrashing %(_step_arg1)s ...",
+            fix_log_message => sub {
+                my ($args, $step) = @_;
+                "Untrashing ".($step->[2] // $step->[1])." ...";
+            },
             fix => sub {
                 my ($args, $step, $undo) = @_;
                 my $a = $step->[1];
@@ -123,7 +129,7 @@ sub empty_trash {
 
 =head1 SYNOPSIS
 
- # use the u-trash, u-trash-empty script
+ # use the trash-u script
 
 
 =head1 DESCRIPTION

@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Cwd qw(abs_path);
-use File::Trash::FreeDesktop;
+use File::Trash::FreeDesktop 0.04;
 use Perinci::Sub::Gen::Undoable 0.13 qw(gen_undoable_func);
 
 # VERSION
@@ -79,7 +79,7 @@ _
             fix => sub {
                 my ($args, $step, $undo) = @_;
                 my $a = $step->[1];
-                $trash->recover($a);
+                $trash->recover({on_not_found=>'ignore'}, $a);
                 [200, "OK"];
             },
         },

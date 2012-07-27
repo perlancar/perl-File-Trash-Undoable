@@ -6,7 +6,7 @@ use warnings;
 
 use Cwd qw(abs_path);
 use File::Trash::FreeDesktop 0.05;
-use Perinci::Sub::Gen::Undoable 0.13 qw(gen_undoable_func);
+use Perinci::Sub::Gen::Undoable 0.14 qw(gen_undoable_func);
 
 # VERSION
 
@@ -60,6 +60,7 @@ _
                 my ($args, $step) = @_;
                 return [200, "OK", ["untrash", $step->[1]]];
             },
+            fix_log_message => "Trashing %(_step_arg0)s ...",
             fix => sub {
                 my ($args, $step, $undo) = @_;
                 my $a = $step->[1];
@@ -78,6 +79,7 @@ _
                 my ($args, $step) = @_;
                 return [200, "OK", ["trash", $step->[1]]];
             },
+            fix_log_message => "Untrashing %(_step_arg0)s ...",
             fix => sub {
                 my ($args, $step, $undo) = @_;
                 my $a = $step->[1];

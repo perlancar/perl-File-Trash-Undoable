@@ -113,7 +113,7 @@ sub list_trash_contents {
 }
 
 $SPEC{empty_trash} = {
-    summary => 'List contents of trash directory',
+    summary => 'Empty trash',
 };
 sub empty_trash {
     my %args = @_;

@@ -120,8 +120,12 @@ sub empty_trash {
     my $cmd  = $args{-cmdline};
 
     $trash->empty;
-    $cmd->run_clear_history;
-    $cmd->{_res};
+    if ($cmd) {
+        $cmd->run_clear_history;
+        return $cmd->{_res};
+    } else {
+        [200, "OK"];
+    }
 }
 
 1;

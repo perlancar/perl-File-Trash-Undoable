@@ -3,10 +3,11 @@ package File::Trash::Undoable;
 use 5.010;
 use strict;
 use warnings;
+use Log::Any '$log';
 
 use Cwd qw(abs_path);
 use File::Trash::FreeDesktop 0.05;
-use Perinci::Sub::Gen::Undoable 0.14 qw(gen_undoable_func);
+use Perinci::Sub::Gen::Undoable 0.24 qw(gen_undoable_func);
 
 # VERSION
 
@@ -14,14 +15,98 @@ our %SPEC;
 
 my $trash = File::Trash::FreeDesktop->new;
 
-my $_step_untrash;
+my $res;
 
-my $res = gen_undoable_func(
+$res = gen_undoable_func(
+    v => 2,
+    name => 'trash',
+    summary => 'Trash a file',
+    args => {
+        path => {
+            schema => 'str*',
+        },
+    },
+    description => <<'_',
+
+Fixed state: path does not exist.
+
+Fixable state: path exists.
+
+_
+    check_args => sub {
+        # TMP, schema
+        my $args = shift;
+        defined($args->{path}) or return [400, "Please specify path"];
+        [200, "OK"];
+    },
+    check_or_fix_state => sub {
+        my ($which, $args, $step) = @_;
+
+        #my $do_log   = !$args->{-check_state};
+        my $path     = $args->{path};
+        my $exists   = (-l $path) || (-e _);
+
+        my @u;
+        if ($which eq 'check') {
+            if ($exists) {
+                push @u, [__PACKAGE__.'::untrash', {path => $path}];
+            }
+            return @u ? [200,"OK",undef,{undo_data=>\@u}]:[304,"Nothing to do"];
+        }
+        $log->info("Trashing $path ...");
+        eval { $trash->trash($path) };
+        return $@ ? [500, "trash() failed: $@"] : [200, "OK"];
+    }
+);
+$res->[0] == 200 or die "Can't generate untrash(): $res->[0] - $res->[1]";
+
+$res = gen_undoable_func(
+    v => 2,
+    name => 'untrash',
+    summary => 'Untrash a file',
+    description => <<'_',
+
+Fixed state: path exists.
+
+Fixable state: Path does not exist (and entry for path is contained in trash;
+this bit is currently not implemented).
+
+_
+    check_or_fix_state => sub {
+        my ($which, $args, $undo) = @_;
+
+        #my $do_log   = !$args->{-check_state};
+        my $path     = $args->{path};
+        my $exists   = (-l $path) || (-e _);
+
+        my @u;
+        if ($which eq 'check') {
+            if (!$exists) {
+                push @u, [__PACKAGE__.'::trash', {path => $path}];
+            }
+            return @u ? [200,"OK",undef,{undo_data=>\@u}]:[304,"Nothing to do"];
+        }
+        $log->info("Untrashing $path ...");
+        #eval { $trash->recover({on_target_exists=>'ignore', on_not_found=>'ignore'}, $path) };
+        eval { $trash->recover($path) };
+        return $@ ? [500, "untrash() failed: $@"] : [200, "OK"];
+    },
+);
+$res->[0] == 200 or die "Can't generate untrash(): $res->[0] - $res->[1]";
+
+$res = gen_undoable_func(
+    v => 2,
     name => 'trash_files',
     summary => 'Trash files (with undo support)',
+    req_tx => 1,
     args => {
         files => {
             summary => 'Files/dirs to delete',
+            description => <<'_',
+
+Files must exist.
+
+_
             schema => ['array*' => {of=>'str*'}],
             req => 1,
             pos => 0,
@@ -30,79 +115,37 @@ my $res = gen_undoable_func(
     },
     check_args => sub {
         my $args = shift;
-        $args->{files} or return [400, "Please specify files"];
-        ref($args->{files}) eq 'ARRAY' or return [400, "Files must be array"];
-        # necessary?
-        @{$args->{files}} > 0 or return [400, "Please specify at least 1 file"];
+        my $ff   = $args->{files};
+        $ff or return [400, "Please specify files"];
+        ref($ff) eq 'ARRAY' or return [400, "Files must be array"];
+        @$ff > 0 or return [400, "Please specify at least 1 file"];
+        for (@$ff) {
+            (-l $_) || (-e _) or return [400, "File does not exist: $_"];
+            my $orig = $_;
+            $_ = abs_path($_);
+            $_ or return [400, "Can't convert to absolute path: $orig"];
+        }
         [200, "OK"];
     },
-    build_steps => sub {
-        my $args = shift;
-        my $ff   = $args->{files};
+    check_or_fix_state => sub {
+        my ($which, $args, $undo) = @_;
 
-        my @steps;
-        for (@$ff) {
-            my $a = abs_path($_);
-            return [500, "Can't find $_"] unless $a;
-            push @steps, ["trash", $a, $_];
+        my $ff = $args->{files};
+        my $tm = $args->{-tx_manager};
+
+        my @u;
+        if ($which eq 'check') {
+            push @u, [__PACKAGE__."::untrash", {path=>$_}]
+                for @$ff;
+            return @u ? [200,"OK",undef,{undo_data=>\@u}]:[304,"Nothing to do"];
+        } else {
+            $tm->_empty_undo_data;
+            return $tm->call(calls => [
+                map { [__PACKAGE__."::trash", {path=>$_}] } @$ff ]);
         }
-        [200, "OK", \@steps];
-    },
-    steps => {
-        trash => {
-            summary => 'Trash a file',
-            description => <<'_',
-
-First argument is path (should be absolute). Second argument (optional) is the
-original path (not yet normalized into absolute).
-
-_
-            check => sub {
-                my ($args, $step) = @_;
-                return [200, "OK", ["untrash", $step->[1], $step->[2]]];
-            },
-            fix_log_message => sub {
-                my ($args, $step) = @_;
-                "Trashing ".($step->[2] // $step->[1])." ...";
-            },
-            fix => sub {
-                my ($args, $step, $undo) = @_;
-                my $a = $step->[1];
-                $trash->trash($a);
-                [200, "OK"];
-            },
-        },
-        untrash => ($_step_untrash = {
-            summary => 'Untrash a file',
-            description => <<'_',
-
-First argument is path (absolute). Second argument (optional) is the original
-path (not yet normalized into absolute).
-
-_
-            check => sub {
-                my ($args, $step) = @_;
-                return [200, "OK", ["trash", $step->[1], $step->[2]]];
-            },
-            fix_log_message => sub {
-                my ($args, $step) = @_;
-                "Untrashing ".($step->[2] // $step->[1])." ...";
-            },
-            fix => sub {
-                my ($args, $step, $undo) = @_;
-                my $a = $step->[1];
-                $trash->recover({
-                    on_not_found     => 'ignore',
-                    on_target_exists => 'ignore',
-                }, $a);
-                [200, "OK"];
-            },
-        }),
-        # old alias to untrash
-        recover => $_step_untrash,
     },
 );
-$res->[0] == 200 or die "Can't generate function: $res->[0] - $res->[1]";
+$res->[0] == 200 or die "Can't generate trash_files(): $res->[0] - $res->[1]";
 
 $SPEC{list_trash_contents} = {
     summary => 'List contents of trash directory',

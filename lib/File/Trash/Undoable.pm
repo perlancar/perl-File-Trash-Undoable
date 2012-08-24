@@ -6,8 +6,7 @@ use warnings;
 use Log::Any '$log';
 
 use Cwd qw(abs_path);
-use File::Trash::FreeDesktop 0.05;
-use Perinci::Sub::Gen::Undoable 0.24 qw(gen_undoable_func);
+use File::Trash::FreeDesktop 0.06;
 
 # VERSION
 
@@ -15,15 +14,14 @@ our %SPEC;
 
 my $trash = File::Trash::FreeDesktop->new;
 
-my $res;
-
-$res = gen_undoable_func(
-    v => 2,
-    name => 'trash',
-    summary => 'Trash a file',
-    args => {
+$SPEC{trash} = {
+    v           => 1.1,
+    name        => 'trash',
+    summary     => 'Trash a file',
+    args        => {
         path => {
             schema => 'str*',
+            req => 1,
         },
     },
     description => <<'_',
@@ -33,73 +31,112 @@ Fixed state: path does not exist.
 Fixable state: path exists.
 
 _
-    check_args => sub {
-        # TMP, schema
-        my $args = shift;
-        defined($args->{path}) or return [400, "Please specify path"];
-        [200, "OK"];
+    features => {
+        tx => {v=>2},
+        idempotent => 1,
     },
-    check_or_fix_state => sub {
-        my ($which, $args, $step) = @_;
+};
+sub trash {
+    my %args = @_;
 
-        #my $do_log   = !$args->{-check_state};
-        my $path     = $args->{path};
-        my $exists   = (-l $path) || (-e _);
+    # TMP, SCHEMA
+    my $tx_action = $args{-tx_action} // "";
+    my $path = $args{path};
+    defined($path) or return [400, "Please specify path"];
 
-        my @u;
-        if ($which eq 'check') {
-            if ($exists) {
-                push @u, [__PACKAGE__.'::untrash', {path => $path}];
-            }
-            return @u ? [200,"OK",undef,{undo_data=>\@u}]:[304,"Nothing to do"];
+    my @st     = lstat($path);
+    my $exists = (-l _) || (-e _);
+
+    my @undo;
+
+    if ($tx_action eq 'check_state') {
+        if ($exists) {
+            push @undo, [untrash => {path=>$path, mtime=>$st[9]}];
         }
+        if (@undo) {
+            return [200, "Fixable", undef, {undo_actions=>\@undo}];
+        } else {
+            return [304, "Fixed"];
+        }
+    } elsif ($tx_action eq 'fix_state') {
         $log->info("Trashing $path ...");
         eval { $trash->trash($path) };
         return $@ ? [500, "trash() failed: $@"] : [200, "OK"];
     }
-);
-$res->[0] == 200 or die "Can't generate untrash(): $res->[0] - $res->[1]";
+    [400, "Invalid -tx_action"];
+}
 
-$res = gen_undoable_func(
-    v => 2,
-    name => 'untrash',
-    summary => 'Untrash a file',
+$SPEC{untrash} = {
+    v           => 1.1,
+    summary     => 'Untrash a file',
     description => <<'_',
 
-Fixed state: path exists.
+Fixed state: path exists (and if mtime is specified, with same mtime).
 
-Fixable state: Path does not exist (and entry for path is contained in trash;
-this bit is currently not implemented).
+Fixable state: Path does not exist (and exists in trash, and if mtime is
+specified, has the exact same mtime).
 
 _
-    check_or_fix_state => sub {
-        my ($which, $args, $undo) = @_;
-
-        #my $do_log   = !$args->{-check_state};
-        my $path     = $args->{path};
-        my $exists   = (-l $path) || (-e _);
-
-        my @u;
-        if ($which eq 'check') {
-            if (!$exists) {
-                push @u, [__PACKAGE__.'::trash', {path => $path}];
-            }
-            return @u ? [200,"OK",undef,{undo_data=>\@u}]:[304,"Nothing to do"];
-        }
-        $log->info("Untrashing $path ...");
-        #eval { $trash->recover({on_target_exists=>'ignore', on_not_found=>'ignore'}, $path) };
-        eval { $trash->recover($path) };
-        return $@ ? [500, "untrash() failed: $@"] : [200, "OK"];
+    args        => {
+        path => {
+            schema => 'str*',
+            req => 1,
+        },
+        mtime => {
+            schema => 'int*',
+        },
     },
-);
-$res->[0] == 200 or die "Can't generate untrash(): $res->[0] - $res->[1]";
+    features => {
+        tx => {v=>2},
+        idempotent => 1,
+    },
+};
+sub untrash {
+    my %args = @_;
 
-$res = gen_undoable_func(
-    v => 2,
-    name => 'trash_files',
-    summary => 'Trash files (with undo support)',
-    req_tx => 1,
-    args => {
+    # TMP, SCHEMA
+    my $tx_action = $args{-tx_action} // "";
+    my $path0 = $args{path};
+    defined($path0) or return [400, "Please specify path"];
+    my $mtime = $args{mtime};
+
+    my $apath  = abs_path($path0);
+    my @st     = lstat($apath);
+    my $exists = (-l _) || (-e _);
+
+    if ($tx_action eq 'check_state') {
+
+        my @undo;
+        if ($exists) {
+            if (defined $mtime) {
+                if ($st[9] == $mtime) {
+                    return [304, "Path exists (with same mtime)"];
+                } else {
+                    return [412, "Path exists (with different mtime)"];
+                }
+            } else {
+                return [304, "Path exists"];
+            }
+        }
+
+        my @res = $trash->list_contents({
+            search_path=>$apath, mtime=>$args{mtime}});
+        return [412, "Path does not exist in trash"] unless @res;
+        push @undo, [trash => {path => $apath}];
+        return [200, "Fixable", undef, {undo_actions=>\@undo}];
+
+    } elsif ($tx_action eq 'fix_state') {
+        $log->info("Untrashing $path0 ...");
+        eval { $trash->recover($apath) };
+        return $@ ? [500, "untrash() failed: $@"] : [200, "OK"];
+    }
+    [400, "Invalid -tx_action"];
+}
+
+$SPEC{trash_files} = {
+    v          => 1.1,
+    summary    => 'Trash files (with undo support)',
+    args       => {
         files => {
             summary => 'Files/dirs to delete',
             description => <<'_',
@@ -113,39 +150,33 @@ _
             greedy => 1,
         },
     },
-    check_args => sub {
-        my $args = shift;
-        my $ff   = $args->{files};
-        $ff or return [400, "Please specify files"];
-        ref($ff) eq 'ARRAY' or return [400, "Files must be array"];
-        @$ff > 0 or return [400, "Please specify at least 1 file"];
-        for (@$ff) {
-            (-l $_) || (-e _) or return [400, "File does not exist: $_"];
-            my $orig = $_;
-            $_ = abs_path($_);
-            $_ or return [400, "Can't convert to absolute path: $orig"];
-        }
-        [200, "OK"];
+    features => {
+        tx => {v=>2},
+        idempotent => 1,
     },
-    check_or_fix_state => sub {
-        my ($which, $args, $undo) = @_;
+};
+sub trash_files {
+    my %args = @_;
 
-        my $ff = $args->{files};
-        my $tm = $args->{-tx_manager};
+    # TMP, SCHEMA
+    my $ff   = $args{files};
+    $ff or return [400, "Please specify files"];
+    ref($ff) eq 'ARRAY' or return [400, "Files must be array"];
+    @$ff > 0 or return [400, "Please specify at least 1 file"];
 
-        my @u;
-        if ($which eq 'check') {
-            push @u, [__PACKAGE__."::untrash", {path=>$_}]
-                for @$ff;
-            return @u ? [200,"OK",undef,{undo_data=>\@u}]:[304,"Nothing to do"];
-        } else {
-            $tm->_empty_undo_data;
-            return $tm->call(calls => [
-                map { [__PACKAGE__."::trash", {path=>$_}] } @$ff ]);
-        }
-    },
-);
-$res->[0] == 200 or die "Can't generate trash_files(): $res->[0] - $res->[1]";
+    my (@do, @undo);
+    for (@$ff) {
+        my @st = lstat($_) or return [400, "Can't stat $_: $!"];
+        (-l _) || (-e _) or return [400, "File does not exist: $_"];
+        my $orig = $_;
+        $_ = abs_path($_);
+        $_ or return [400, "Can't convert to absolute path: $orig"];
+        push @do  , [trash   => {path=>$_}];
+        push @undo, [untrash => {path=>$_, mtime=>$st[9]}];
+    }
+
+    return [200, "Fixable", undef, {do_actions=>\@do, undo_actions=>\@undo}];
+}
 
 $SPEC{list_trash_contents} = {
     summary => 'List contents of trash directory',

@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Log::Any '$log';
 
-use Cwd qw(abs_path);
+use SHARYANTO::File::Util qw(l_abs_path);
 use File::Trash::FreeDesktop 0.06;
 
 # VERSION
@@ -100,7 +100,7 @@ sub untrash {
     defined($path0) or return [400, "Please specify path"];
     my $mtime = $args{mtime};
 
-    my $apath  = abs_path($path0);
+    my $apath  = l_abs_path($path0);
     my @st     = lstat($apath);
     my $exists = (-l _) || (-e _);
 
@@ -169,7 +169,7 @@ sub trash_files {
         my @st = lstat($_) or return [400, "Can't stat $_: $!"];
         (-l _) || (-e _) or return [400, "File does not exist: $_"];
         my $orig = $_;
-        $_ = abs_path($_);
+        $_ = l_abs_path($_);
         $_ or return [400, "Can't convert to absolute path: $orig"];
         push @do  , [trash   => {path=>$_}];
         push @undo, [untrash => {path=>$_, mtime=>$st[9]}];

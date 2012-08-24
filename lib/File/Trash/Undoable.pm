@@ -6,7 +6,7 @@ use warnings;
 use Log::Any '$log';
 
 use SHARYANTO::File::Util qw(l_abs_path);
-use File::Trash::FreeDesktop 0.06;
+use File::Trash::FreeDesktop;
 
 # VERSION
 

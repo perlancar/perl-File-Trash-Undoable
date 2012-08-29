@@ -8,16 +8,18 @@ use FindBin '$Bin';
 use lib "$Bin/lib";
 
 use File::chdir;
-use File::Path qw(remove_tree);
+use File::Path qw(make_path remove_tree);
 use File::Slurp;
 use File::Temp qw(tempdir);
-use File::Trash::Undoable;
 use Test::More 0.98;
 use Test::Perinci::Tx::Manager qw(test_tx_action);
 
 my $tmpdir = tempdir(CLEANUP=>1);
 $CWD = $tmpdir;
 $ENV{HOME} = $tmpdir;
+make_path "$tmpdir/.local/share/Trash/info", "$tmpdir/.local/share/Trash/files";
+
+require File::Trash::Undoable; # so our changing HOME takes effect
 
 test_tx_action(
     name        => "fixed (path doesn't exist)",

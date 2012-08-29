@@ -56,7 +56,7 @@ sub trash {
     if (defined $suffix) {
         if ($tx_action eq 'check_state') {
             if ($exists) {
-                push @undo, [untrash => {path=>$path, suffix=>$suffix}];
+                unshift @undo, [untrash => {path=>$path, suffix=>$suffix}];
             }
             if (@undo) {
                 return [200, "Fixable", undef, {undo_actions=>\@undo}];
@@ -74,8 +74,8 @@ sub trash {
             or return [412, "Please specify -tx_action_id"];
         $suffix = substr($taid, 0, 8);
         if ($exists) {
-            push @do  , [trash   => {path=>$path, suffix=>$suffix}];
-            push @undo, [untrash => {path=>$path, suffix=>$suffix}];
+            push    @do  , [trash   => {path=>$path, suffix=>$suffix}];
+            unshift @undo, [untrash => {path=>$path, suffix=>$suffix}];
         }
         if (@undo) {
             return [200, "Fixable", undef, {
@@ -132,7 +132,7 @@ sub untrash {
         my @res = $trash->list_contents({
             search_path=>$apath, suffix=>$suffix});
         return [412, "Path does not exist in trash"] unless @res;
-        push @undo, [trash => {path => $apath, suffix=>$suffix}];
+        unshift @undo, [trash => {path => $apath, suffix=>$suffix}];
         return [200, "Fixable", undef, {undo_actions=>\@undo}];
 
     } elsif ($tx_action eq 'fix_state') {
@@ -181,8 +181,8 @@ sub trash_files {
         my $orig = $_;
         $_ = l_abs_path($_);
         $_ or return [400, "Can't convert to absolute path: $orig"];
-        push @do  , [trash   => {path=>$_}];
-        push @undo, [untrash => {path=>$_, mtime=>$st[9]}];
+        push    @do  , [trash   => {path=>$_}];
+        unshift @undo, [untrash => {path=>$_, mtime=>$st[9]}];
     }
 
     return [200, "Fixable", undef, {do_actions=>\@do, undo_actions=>\@undo}];

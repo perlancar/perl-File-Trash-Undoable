@@ -42,6 +42,9 @@ test_tx_action(
     after_do    => sub {
         ok(!(-e "p"), "p deleted");
     },
+    after_undo  => sub {
+        ok((-d "p"), "p restored");
+    },
 );
 
 DONE_TESTING:

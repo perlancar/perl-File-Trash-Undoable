@@ -169,7 +169,8 @@ sub trash_files {
     my %args = @_;
 
     # TMP, SCHEMA
-    my $ff   = $args{files};
+    my $dry_run = $args{-dry_run};
+    my $ff      = $args{files};
     $ff or return [400, "Please specify files"];
     ref($ff) eq 'ARRAY' or return [400, "Files must be array"];
     @$ff > 0 or return [400, "Please specify at least 1 file"];
@@ -181,6 +182,7 @@ sub trash_files {
         my $orig = $_;
         $_ = l_abs_path($_);
         $_ or return [400, "Can't convert to absolute path: $orig"];
+        $log->infof("(DRY) Trashing %s ...", $orig) if $dry_run;
         push    @do  , [trash   => {path=>$_}];
         unshift @undo, [untrash => {path=>$_, mtime=>$st[9]}];
     }

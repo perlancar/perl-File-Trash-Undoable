@@ -7,7 +7,6 @@ use Log::Any '$log';
 
 use SHARYANTO::File::Util qw(l_abs_path);
 use File::Trash::FreeDesktop;
-use UUID::Random;
 
 # VERSION
 
@@ -71,12 +70,16 @@ sub trash {
         }
         return [400, "Invalid -tx_action"];
     } else {
-        $suffix = substr(UUID::Random::generate(), 0, 8); # 32-bit suffices now
+        my $taid = $args{-tx_action_id}
+            or return [412, "Please specify -tx_action_id"];
+        $suffix = substr($taid, 0, 8);
         if ($exists) {
-            push @do,   [trash   => {path=>$path, suffix=>$suffix}];
+            push @do  , [trash   => {path=>$path, suffix=>$suffix}];
             push @undo, [untrash => {path=>$path, suffix=>$suffix}];
+        }
+        if (@undo) {
             return [200, "Fixable", undef, {
-                do_actions => \@do, undo_actions => \@undo}];
+                do_actions=>\@do, undo_actions=>\@undo}];
         } else {
             return [304, "Fixed"];
         }

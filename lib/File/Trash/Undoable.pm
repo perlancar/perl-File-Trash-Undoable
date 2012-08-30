@@ -224,8 +224,8 @@ sub empty_trash {
 
 =head1 DESCRIPTION
 
-This module provides routines to trash files, with undo/redo support. Originally
-written to demonstrate/test L<Perinci::Sub::Gen::Undoable>.
+This module provides routines to trash files, with undo/redo support. Actual
+trashing/untrashing is provided by L<File::Trash::FreeDesktop>.
 
 
 =head1 SEE ALSO

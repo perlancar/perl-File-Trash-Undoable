@@ -44,9 +44,10 @@ sub trash {
 
     # TMP, SCHEMA
     my $tx_action = $args{-tx_action} // "";
-    my $path = $args{path};
+    my $dry_run   = $args{-dry_run};
+    my $path      = $args{path};
     defined($path) or return [400, "Please specify path"];
-    my $suffix = $args{suffix};
+    my $suffix    = $args{suffix};
 
     my @st     = lstat($path);
     my $exists = (-l _) || (-e _);
@@ -59,9 +60,11 @@ sub trash {
                 unshift @undo, [untrash => {path=>$path, suffix=>$suffix}];
             }
             if (@undo) {
-                return [200, "Fixable", undef, {undo_actions=>\@undo}];
+                $log->info("(DRY) Trashing $path ...") if $dry_run;
+                return [200, "File/dir $path should be trashed",
+                        undef, {undo_actions=>\@undo}];
             } else {
-                return [304, "Fixed"];
+                return [304, "File/dir $path already does not exist"];
             }
         } elsif ($tx_action eq 'fix_state') {
             $log->info("Trashing $path ...");
@@ -78,10 +81,10 @@ sub trash {
             unshift @undo, [untrash => {path=>$path, suffix=>$suffix}];
         }
         if (@undo) {
-            return [200, "Fixable", undef, {
-                do_actions=>\@do, undo_actions=>\@undo}];
+            $log->info("(DRY) Trashing $path (suffix $suffix) ...") if $dry_run;
+            return [200, "", undef, {do_actions=>\@do, undo_actions=>\@undo}];
         } else {
-            return [304, "Fixed"];
+            return [304, "File/dir $path already does not exist"];
         }
     }
 }
@@ -116,24 +119,27 @@ sub untrash {
 
     # TMP, SCHEMA
     my $tx_action = $args{-tx_action} // "";
-    my $path0 = $args{path};
+    my $dry_run   = $args{-dry_run};
+    my $path0     = $args{path};
     defined($path0) or return [400, "Please specify path"];
-    my $suffix = $args{suffix};
+    my $suffix    = $args{suffix};
 
-    my $apath  = l_abs_path($path0);
-    my @st     = lstat($apath);
-    my $exists = (-l _) || (-e _);
+    my $apath     = l_abs_path($path0);
+    my @st        = lstat($apath);
+    my $exists    = (-l _) || (-e _);
 
     if ($tx_action eq 'check_state') {
 
         my @undo;
-        return [304, "Path exists"] if $exists;
+        return [304, "Path $path0 already exists"] if $exists;
 
         my @res = $trash->list_contents({
             search_path=>$apath, suffix=>$suffix});
-        return [412, "Path does not exist in trash"] unless @res;
+        return [412, "File/dir $path0 does not exist in trash"] unless @res;
         unshift @undo, [trash => {path => $apath, suffix=>$suffix}];
-        return [200, "Fixable", undef, {undo_actions=>\@undo}];
+        $log->info("(DRY) Untrashing $path0 ...") if $dry_run;
+        return [200, "File/dir $path0 should be untrashed",
+                undef, {undo_actions=>\@undo}];
 
     } elsif ($tx_action eq 'fix_state') {
         $log->info("Untrashing $path0 ...");
@@ -187,7 +193,7 @@ sub trash_files {
         unshift @undo, [untrash => {path=>$_, mtime=>$st[9]}];
     }
 
-    return [200, "Fixable", undef, {do_actions=>\@do, undo_actions=>\@undo}];
+    return [200, "", undef, {do_actions=>\@do, undo_actions=>\@undo}];
 }
 
 $SPEC{list_trash_contents} = {

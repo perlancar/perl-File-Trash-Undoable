@@ -5,8 +5,8 @@ use strict;
 use warnings;
 use Log::Any '$log';
 
-use SHARYANTO::File::Util qw(l_abs_path);
 use File::Trash::FreeDesktop;
+use SHARYANTO::File::Util qw(l_abs_path);
 
 # VERSION
 

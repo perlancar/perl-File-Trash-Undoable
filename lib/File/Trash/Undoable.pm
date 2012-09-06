@@ -68,8 +68,9 @@ sub trash {
             }
         } elsif ($tx_action eq 'fix_state') {
             $log->info("Trashing $path ...");
-            eval { $trash->trash({suffix=>$suffix}, $path) };
-            return $@ ? [500, "trash() failed: $@"] : [200, "OK"];
+            my $tfile;
+            eval { $tfile = $trash->trash({suffix=>$suffix}, $path) };
+            return $@ ? [500, "trash() failed: $@"] : [200, "OK", $tfile];
         }
         return [400, "Invalid -tx_action"];
     } else {

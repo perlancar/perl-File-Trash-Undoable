@@ -59,7 +59,7 @@ Perinci::CmdLine->new(
  # trash some more files
  % trash-u * .tmp
 
- # ups made a mistake; no worry, let's undo; now previous trashing is reversed
+ # oops, made a mistake; no worry, let's undo; now previous trashing is reversed
  % trash-u --undo
 
  # undo again; now the *.bak files are also restored

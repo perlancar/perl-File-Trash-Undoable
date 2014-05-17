@@ -198,6 +198,7 @@ sub trash_files {
 }
 
 $SPEC{list_trash_contents} = {
+    v => 1.1,
     summary => 'List contents of trash directory',
 };
 sub list_trash_contents {
@@ -206,6 +207,7 @@ sub list_trash_contents {
 }
 
 $SPEC{empty_trash} = {
+    v => 1.1,
     summary => 'Empty trash',
 };
 sub empty_trash {

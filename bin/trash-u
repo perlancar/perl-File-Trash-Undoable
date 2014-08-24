@@ -6,7 +6,7 @@
 use 5.010;
 use strict;
 use warnings;
-use Perinci::CmdLine 1.17;
+use Perinci::CmdLine 1.20;
 
 my $cmd = Perinci::CmdLine->new(
     url => '/File/Trash/Undoable/',

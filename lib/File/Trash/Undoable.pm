@@ -236,6 +236,14 @@ sub empty_trash {
 This module provides routines to trash files, with undo/redo support. Actual
 trashing/untrashing is provided by L<File::Trash::FreeDesktop>.
 
+Screenshots:
+
+=begin HTML
+
+<p><img src="http://blogs.perl.org/users/perlancar/screenshot-trashu.jpg" /><br />
+
+=end HTML
+
 
 =head1 SEE ALSO
 

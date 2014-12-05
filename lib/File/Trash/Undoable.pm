@@ -1,14 +1,15 @@
 package File::Trash::Undoable;
 
+# DATE
+# VERSION
+
 use 5.010001;
 use strict;
 use warnings;
 use Log::Any '$log';
 
+use File::MoreUtil qw(l_abs_path);
 use File::Trash::FreeDesktop;
-use SHARYANTO::File::Util qw(l_abs_path);
-
-# VERSION
 
 our %SPEC;
 

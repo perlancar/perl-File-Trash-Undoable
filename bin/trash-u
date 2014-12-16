@@ -54,7 +54,7 @@ $cmd->run;
 
 1;
 # ABSTRACT: Trash files, with undo/redo capability
-# PODNAME: trash-u
+# PODNAME:
 
 =head1 SYNOPSIS
 

@@ -53,7 +53,7 @@ $cmd->common_opts->{list_contents} = {
 $cmd->run;
 
 1;
-# ABSTRACT: Trash files, with undo/redo capability
+# ABSTRACT:
 # PODNAME:
 
 =head1 SYNOPSIS

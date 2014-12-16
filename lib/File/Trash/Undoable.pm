@@ -13,6 +13,11 @@ use File::Trash::FreeDesktop;
 
 our %SPEC;
 
+$SPEC{':package'} = {
+    v => 1.1,
+    summary => 'Trash files, with undo/redo capability',
+};
+
 my $trash = File::Trash::FreeDesktop->new;
 
 $SPEC{trash} = {

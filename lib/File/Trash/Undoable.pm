@@ -230,7 +230,7 @@ sub empty_trash {
 }
 
 1;
-# ABSTRACT: Trash files (with undo support)
+# ABSTRACT:
 
 =head1 SYNOPSIS
 

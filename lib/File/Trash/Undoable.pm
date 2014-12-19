@@ -223,7 +223,6 @@ sub empty_trash {
     $trash->empty;
     if ($cmd) {
         $cmd->run_clear_history;
-        return $cmd->{_res};
     } else {
         [200, "OK"];
     }

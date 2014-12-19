@@ -25,6 +25,7 @@ my $cmd = Perinci::CmdLine->new(
         },
     },
     default_subcommand => 'trash',
+    pass_cmdline_object => 1,
     undo => 1,
 );
 

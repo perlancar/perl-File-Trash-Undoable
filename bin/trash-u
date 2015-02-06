@@ -6,9 +6,9 @@
 use 5.010;
 use strict;
 use warnings;
-use Perinci::CmdLine;
+use Perinci::CmdLine::Classic;
 
-my $cmd = Perinci::CmdLine->new(
+my $cmd = Perinci::CmdLine::Classic->new(
     url => '/File/Trash/Undoable/',
     subcommands => {
         trash         => {

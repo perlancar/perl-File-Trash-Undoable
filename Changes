@@ -1,5 +1,12 @@
 Revision history for File-Trash-Undoable
 
+0.16    2015-02-06 (PERLANCAR)
+
+	- No functional changes.
+
+	- Adjust to Perinci::CmdLine -> Perinci::CmdLine::Classic.
+
+
 0.15    2014-12-19 (PERLANCAR)
 
         - [Bugfix] Update old code (which didn't adjust to pericmd 1.17+, where

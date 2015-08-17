@@ -1,5 +1,12 @@
 Revision history for File-Trash-Undoable
 
+0.17    2015-08-17 (PERLANCAR)
+
+	- No functional changes.
+
+	- Switch from Log::Any to Log::Any::IfLOG.
+
+
 0.16    2015-02-06 (PERLANCAR)
 
 	- No functional changes.

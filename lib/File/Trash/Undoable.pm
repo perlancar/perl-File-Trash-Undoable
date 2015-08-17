@@ -6,7 +6,7 @@ package File::Trash::Undoable;
 use 5.010001;
 use strict;
 use warnings;
-use Log::Any '$log';
+use Log::Any::IfLOG '$log';
 
 use File::MoreUtil qw(l_abs_path);
 use File::Trash::FreeDesktop;

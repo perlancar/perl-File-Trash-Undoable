@@ -9,7 +9,7 @@ use lib "$Bin/lib";
 
 use File::chdir;
 use File::Path qw(make_path remove_tree);
-use File::Slurp::Tiny qw(write_file);
+use File::Slurper qw(write_text);
 use File::Temp qw(tempdir);
 use Test::More 0.98;
 use Test::Perinci::Tx::Manager qw(test_tx_action);
@@ -56,7 +56,7 @@ test_tx_action(
     args        => {path=>"p"},
     reset_state => sub {
         remove_tree "p";
-        write_file "p", "";
+        write_text "p", "";
     },
     after_do    => sub {
         ok(!(-e "p"), "p deleted");

@@ -1,5 +1,14 @@
 Revision history for File-Trash-Undoable
 
+0.19    2016-06-12 (PERLANCAR)
+
+	- No functional changes.
+
+	- [test] Replace File::Slurp::Tiny with File::Slurper.
+
+	- [dist] Bump prereq version Test::Perinci::Tx::Manager -> 0.56.
+
+
 0.18    2015-09-03 (PERLANCAR)
 
 	- No functional changes.

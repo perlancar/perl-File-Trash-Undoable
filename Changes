@@ -1,5 +1,18 @@
 Revision history for File-Trash-Undoable
 
+0.20    2016-12-27 (PERLANCAR)
+
+	- No functional changes.
+
+        - [dist] Move spec prereq from DevelopRecommends to DevelopSuggests
+	  with _SPEC:: prefix.
+
+        - Split trash-u script to its own dist perl-App-trash-u to reduce
+          dependencies for this dist.
+
+        - [build] Rebuild to remove extraneous dependencies.
+
+
 0.19    2016-06-12 (PERLANCAR)
 
 	- No functional changes.

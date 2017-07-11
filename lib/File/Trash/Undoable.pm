@@ -6,7 +6,7 @@ package File::Trash::Undoable;
 use 5.010001;
 use strict;
 use warnings;
-use Log::Any::IfLOG '$log';
+use Log::ger;
 
 use File::MoreUtil qw(l_abs_path);
 use File::Trash::FreeDesktop;
@@ -66,14 +66,14 @@ sub trash {
                 unshift @undo, [untrash => {path=>$path, suffix=>$suffix}];
             }
             if (@undo) {
-                $log->info("(DRY) Trashing $path ...") if $dry_run;
+                log_info("(DRY) Trashing $path ...") if $dry_run;
                 return [200, "File/dir $path should be trashed",
                         undef, {undo_actions=>\@undo}];
             } else {
                 return [304, "File/dir $path already does not exist"];
             }
         } elsif ($tx_action eq 'fix_state') {
-            $log->info("Trashing $path ...");
+            log_info("Trashing $path ...");
             my $tfile;
             eval { $tfile = $trash->trash({suffix=>$suffix}, $path) };
             return $@ ? [500, "trash() failed: $@"] : [200, "OK", $tfile];
@@ -88,7 +88,7 @@ sub trash {
             unshift @undo, [untrash => {path=>$path, suffix=>$suffix}];
         }
         if (@undo) {
-            $log->info("(DRY) Trashing $path (suffix $suffix) ...") if $dry_run;
+            log_info("(DRY) Trashing $path (suffix $suffix) ...") if $dry_run;
             return [200, "", undef, {do_actions=>\@do, undo_actions=>\@undo}];
         } else {
             return [304, "File/dir $path already does not exist"];
@@ -144,12 +144,12 @@ sub untrash {
             search_path=>$apath, suffix=>$suffix});
         return [412, "File/dir $path0 does not exist in trash"] unless @res;
         unshift @undo, [trash => {path => $apath, suffix=>$suffix}];
-        $log->info("(DRY) Untrashing $path0 ...") if $dry_run;
+        log_info("(DRY) Untrashing $path0 ...") if $dry_run;
         return [200, "File/dir $path0 should be untrashed",
                 undef, {undo_actions=>\@undo}];
 
     } elsif ($tx_action eq 'fix_state') {
-        $log->info("Untrashing $path0 ...");
+        log_info("Untrashing $path0 ...");
         eval { $trash->recover({suffix=>$suffix}, $apath) };
         return $@ ? [500, "untrash() failed: $@"] : [200, "OK"];
     }
@@ -195,7 +195,7 @@ sub trash_files {
         my $orig = $_;
         $_ = l_abs_path($_);
         $_ or return [400, "Can't convert to absolute path: $orig"];
-        $log->infof("(DRY) Trashing %s ...", $orig) if $dry_run;
+        log_info("(DRY) Trashing %s ...", $orig) if $dry_run;
         push    @do  , [trash   => {path=>$_}];
         unshift @undo, [untrash => {path=>$_, mtime=>$st[9]}];
     }

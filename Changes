@@ -1,3 +1,9 @@
+0.230   2020-06-03  Released-By: PERLANCAR; Urgency: medium
+
+	- [bugfix] Prefix function name in do/undo actions with package
+	  name, so they're usable from other package.
+
+
 0.22    2017-07-11  Released-By: PERLANCAR
 
 	- No functional changes.

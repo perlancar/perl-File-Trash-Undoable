@@ -63,7 +63,7 @@ sub trash {
     if (defined $suffix) {
         if ($tx_action eq 'check_state') {
             if ($exists) {
-                unshift @undo, [untrash => {path=>$path, suffix=>$suffix}];
+                unshift @undo, [__PACKAGE__."::untrash" => {path=>$path, suffix=>$suffix}];
             }
             if (@undo) {
                 log_info("(DRY) Trashing $path ...") if $dry_run;
@@ -84,8 +84,8 @@ sub trash {
             or return [412, "Please specify -tx_action_id"];
         $suffix = substr($taid, 0, 8);
         if ($exists) {
-            push    @do  , [trash   => {path=>$path, suffix=>$suffix}];
-            unshift @undo, [untrash => {path=>$path, suffix=>$suffix}];
+            push    @do  , [__PACKAGE__."::trash"   => {path=>$path, suffix=>$suffix}];
+            unshift @undo, [__PACKAGE__."::untrash" => {path=>$path, suffix=>$suffix}];
         }
         if (@undo) {
             log_info("(DRY) Trashing $path (suffix $suffix) ...") if $dry_run;
@@ -143,7 +143,7 @@ sub untrash {
         my @res = $trash->list_contents({
             search_path=>$apath, suffix=>$suffix});
         return [412, "File/dir $path0 does not exist in trash"] unless @res;
-        unshift @undo, [trash => {path => $apath, suffix=>$suffix}];
+        unshift @undo, [__PACKAGE__."::trash" => {path => $apath, suffix=>$suffix}];
         log_info("(DRY) Untrashing $path0 ...") if $dry_run;
         return [200, "File/dir $path0 should be untrashed",
                 undef, {undo_actions=>\@undo}];
@@ -196,8 +196,8 @@ sub trash_files {
         $_ = l_abs_path($_);
         $_ or return [400, "Can't convert to absolute path: $orig"];
         log_info("(DRY) Trashing %s ...", $orig) if $dry_run;
-        push    @do  , [trash   => {path=>$_}];
-        unshift @undo, [untrash => {path=>$_, mtime=>$st[9]}];
+        push    @do  , [__PACKAGE__."::trash"   => {path=>$_}];
+        unshift @undo, [__PACKAGE__."::untrash" => {path=>$_, mtime=>$st[9]}];
     }
 
     return [200, "", undef, {do_actions=>\@do, undo_actions=>\@undo}];
